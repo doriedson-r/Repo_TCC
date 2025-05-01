@@ -1,0 +1,103 @@
+---
+title: "Refatorando os códigos"
+author: "Doriedson"
+date: "2025-05-01"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+### Versão de 'Weibull_Carta.R'
+
+```{r função da tabela 1}
+clear()
+
+weibull_carta_xbar = function(gama0=2, delta0=2,
+                              gama1=c(.1, .5, 1, 1.5, 2, 2.5, 3, 4, 5, 6),
+                              n=5, corridas=50*10**6, vetordelta){
+  # Essa função faz a Tabela 1: Valores de ARL's obtidos para análise de desempenho
+  # do gráfico de X_barra (mudança bidirecional)
+  
+  # gama0 e delta0 são os Parâmetros sob controle.
+  # gama1 e vetordelta (='delta1') são os parâmetros fora de controle
+  # n é o tamanho amostral
+  # corridas é a quantidade de repetição em cada iteração
+  
+  # Média da distribuição
+  mu0 <- gama0*(gamma(1/delta0+1))
+  
+  # Desvio padrão
+  Sigma20 <- (gama0^2)*(gamma(2/delta0+1)-(gamma(1/delta0+1)^2))
+  Sigma0 <- Sigma20^0.5
+  
+  
+  # Distribuição Sob H0 (sob controle)
+  
+  #corridas<-50000000
+  #Corridas Amostras de tamanho n
+
+  SC0 <- (matrix(rweibull(n*corridas, delta0, gama0), n, corridas))
+  SCmean0 <- colMeans(SC0) #Média das corridas amostras
+  
+  # Limites de Controle
+  L<-quantile(SCmean0, c(pnorm(-3), 1-pnorm(-3)))
+  LSC=L[[2]]
+  LIC=L[[1]]
+  #cat('Limite Superior=',LSC,"\n")
+  #cat('Limite Inferior=',LIC,"\n")
+  
+  ARL0<-1/(mean(SCmean0<=LIC)+(mean(SCmean0>=LSC)))
+
+  tabela = data.frame(matrix(#c(sigma0, delta0, ARL0, mu0, sigma0, LIC, LSC),
+                             0, ncol=7))
+  colnames(tabela) <- c("gama1", "delta1", "ARL1",
+                        "mu1", "sigma1", "desvio", "d(%)")
+  for(delta1 in vetordelta){
+    for(valor in gama1){
+      # Distribuição sob H1 (Fora de Controle)
+      mu1 <- valor*(gamma(1/delta1+1))
+      Sigma21 <- (valor^2)*(gamma(2/delta1+1)-(gamma(1/delta1+1)^2))
+      Sigma1 <- Sigma21^0.5
+      
+      # Distribuição Sob H1 (sob controle)
+      SC1<-(matrix(rweibull(n*corridas, delta1, valor),n,corridas)) #Corridas Amostras de tamanho n
+      SCmean1<-colMeans(SC1) #Mean das corridas amostras
+      
+      ARL1 <- 1/(mean(SCmean1<=LIC) + (mean(SCmean1>=LSC)))
+      
+      # Cálculo do desvio (diferença absoluta das médias) e de d (diferença relativa)
+      desvio = mu0 - mu1
+      d = ifelse(desvio/mu0 < 1, round(desvio/mu0, 2)*-100, round(desvio/mu0, 2)*100)
+      tabela = rbind(tabela, c(valor, delta1, round(ARL1, 4), round(mu1, 4),
+                               round(Sigma1, 4), round(desvio, 4), d))
+      # As casas decimais serão formatadas na planilha
+    }
+    cat('\nFeito: delta1=', delta1)
+    }
+    
+    cat("\nSob controle\n\n")
+    print(data.frame(valor=c('gama_0' = round(gama0, 4), 'delta_0'=round(delta0, 4),
+                             'ARL_0' = round(ARL0, 4), 'mu_0' = round(mu0, 4),
+                             'sigma_0'= round(Sigma0, 4), 'LIC' = round(LIC, 4),
+                             'LSC' = round(LSC, 4))))
+
+  return(tabela)
+}
+
+```
+
+
+```{r}
+pracma::tic()
+
+set.seed(2025)
+tab = weibull_carta_xbar(corridas = 10**6, vetordelta = c(.5, 1, 1.5, 2, 3, 5, 10, 20))
+
+write.csv(tab, file="tabela1.csv")
+
+pracma::toc()
+
+```
+
