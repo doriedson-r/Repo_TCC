@@ -12,7 +12,7 @@ knitr::opts_chunk$set(echo = TRUE)
 ### Versão de 'Weibull_Carta.R'
 
 ```{r função da tabela 1}
-clear()
+pracma::clear()
 
 weibull_carta_xbar = function(gama0=2, delta0=2,
                               gama1=c(.1, .5, 1, 1.5, 2, 2.5, 3, 4, 5, 6),
@@ -45,15 +45,14 @@ weibull_carta_xbar = function(gama0=2, delta0=2,
   L<-quantile(SCmean0, c(pnorm(-3), 1-pnorm(-3)))
   LSC=L[[2]]
   LIC=L[[1]]
-  #cat('Limite Superior=',LSC,"\n")
-  #cat('Limite Inferior=',LIC,"\n")
   
-  ARL0<-1/(mean(SCmean0<=LIC)+(mean(SCmean0>=LSC)))
+  ARL0<-1/(mean(SCmean0 <= LIC) + (mean(SCmean0 >= LSC)))
 
   tabela = data.frame(matrix(#c(sigma0, delta0, ARL0, mu0, sigma0, LIC, LSC),
-                             0, ncol=7))
+                             0, ncol=7)
+                      )
   colnames(tabela) <- c("gama1", "delta1", "ARL1",
-                        "mu1", "sigma1", "desvio", "d(%)")
+                         "mu1", "sigma1", "desvio", "d(%)")
   for(delta1 in vetordelta){
     for(valor in gama1){
       # Distribuição sob H1 (Fora de Controle)
@@ -70,7 +69,8 @@ weibull_carta_xbar = function(gama0=2, delta0=2,
       # Cálculo do desvio (diferença absoluta das médias) e de d (diferença relativa)
       desvio = mu0 - mu1
       d = ifelse(desvio/mu0 < 1, round(desvio/mu0, 2)*-100, round(desvio/mu0, 2)*100)
-      tabela = rbind(tabela, c(valor, delta1, round(ARL1, 4), round(mu1, 4),
+      tabela = rbind(tabela, c(valor, delta1,
+                               round(ARL1, 4), round(mu1, 4),
                                round(Sigma1, 4), round(desvio, 4), d))
       # As casas decimais serão formatadas na planilha
     }
@@ -82,22 +82,26 @@ weibull_carta_xbar = function(gama0=2, delta0=2,
                              'ARL_0' = round(ARL0, 4), 'mu_0' = round(mu0, 4),
                              'sigma_0'= round(Sigma0, 4), 'LIC' = round(LIC, 4),
                              'LSC' = round(LSC, 4))))
-
+  tabela <- tabela[-1, ]
+  # colnames(tabela) <- c("gama1", "delta1", "ARL1",
+  #                       "mu1", "sigma1", "desvio", "d(%)")
   return(tabela)
 }
 
 ```
 
-
 ```{r}
-pracma::tic()
-
 set.seed(2025)
-tab = weibull_carta_xbar(corridas = 10**6, vetordelta = c(.5, 1, 1.5, 2, 3, 5, 10, 20))
-
-write.csv(tab, file="tabela1.csv")
-
-pracma::toc()
-
+for(x in c(.5, 1, 1.5, 2, 3, 5, 10, 20)){
+  pracma::tic()
+  
+  tab = weibull_carta_xbar(vetordelta = x)
+  #write.csv(tab, file="tabela1.csv", append = TRUE)
+  write.table(tab, "teste.csv", sep = ",", col.names = !file.exists("teste.csv"),
+              row.names = F, append = T)
+  
+  pracma::toc()
+}
+ 
 ```
 
