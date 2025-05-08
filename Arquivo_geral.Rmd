@@ -2,11 +2,16 @@
 title: "Refatorando os códigos"
 author: "Doriedson"
 date: "2025-05-01"
-output: html_document
+output:
+  pdf_document: default
+  html_document: default
 ---
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
+
+require(ggplot2)
+
 ```
 
 ### Versão de 'Weibull_Carta.R'
@@ -90,18 +95,152 @@ weibull_carta_xbar = function(gama0=2, delta0=2,
 
 ```
 
-```{r}
+```{r eval=FALSE}
+# Para o número de corridas padrão cada iteração demora, em média, 5 min.
 set.seed(2025)
 for(x in c(.5, 1, 1.5, 2, 3, 5, 10, 20)){
   pracma::tic()
   
   tab = weibull_carta_xbar(vetordelta = x)
   #write.csv(tab, file="tabela1.csv", append = TRUE)
-  write.table(tab, "teste.csv", sep = ",", col.names = !file.exists("teste.csv"),
+  write.table(tab, "tabela1.csv", sep = ",", col.names = !file.exists("tabela1.csv"),
               row.names = F, append = T)
   
   pracma::toc()
 }
  
+```
+
+```{r tabela a1, eval=FALSE}
+# Para o número de corridas padrão cada iteração demora, em média, 5 min.
+set.seed(2025)
+for(x in c(.5, 1, 1.5, 2, 3, 5, 10, 20)){
+  pracma::tic()
+  
+  tab = weibull_carta_xbar(gama0 = 2, delta0 = 3, vetordelta = x)
+  #write.csv(tab, file="tabela1.csv", append = TRUE)
+  write.table(tab, "tabela_a1.csv", sep = ",", col.names = !file.exists("tabela_a1.csv"),
+              row.names = F, append = T)
+  
+  pracma::toc()
+}
+
+# gama_0	2.0000			
+# delta_0	3.0000			
+# ARL_0	370.3978			
+# mu_0	1.7860			
+# sigma_0	0.6491			
+# LIC	0.9600			
+# LSC	2.6735
+
+```
+
+```{r tabela a2, eval=FALSE}
+# Para o número de corridas padrão cada iteração demora, em média, 5 min.
+set.seed(2025)
+for(x in c(.5, 1, 1.5, 2, 3, 5, 10, 20)){
+  pracma::tic()
+  
+  tab = weibull_carta_xbar(gama0 = .5, delta0 = 1, vetordelta = x)
+  #write.csv(tab, file="tabela1.csv", append = TRUE)
+  write.table(tab, "tabela_a2.csv", sep = ",", col.names = !file.exists("tabela_a2.csv"),
+              row.names = F, append = T)
+  
+  pracma::toc()
+}
+ 
+# gama_0	0.5000			
+# delta_0	1.0000			
+# ARL_0	370.3978			
+# mu_0	0.5000			
+# sigma_0	0.5000			
+# LIC	0.0791			
+# LSC	1.4389	
+
+```
+
+```{r tabela a3, eval=FALSE}
+# Para o número de corridas padrão cada iteração demora, em média, 5 min.
+set.seed(2025)
+for(x in c(.5, 1, 1.5, 2, 3, 5, 10, 20)){
+  pracma::tic()
+  
+  tab = weibull_carta_xbar(gama0 = 3, delta0 = 6, vetordelta = x)
+  #write.csv(tab, file="tabela1.csv", append = TRUE)
+  write.table(tab, "tabela_a3.csv", sep = ",", col.names = !file.exists("tabela_a3.csv"),
+              row.names = F, append = T)
+  
+  pracma::toc()
+}
+
+# gama_0	3.0000			
+# delta_0	6.0000			
+# ARL_0	370.3978			
+# mu_0	2.7832			
+# sigma_0	0.5393			
+# LIC	2.0133			
+# LSC	3.4486	
+
+```
+
+
+```{r tabela a4, eval=FALSE}
+# Para o número de corridas padrão cada iteração demora, em média, 5 min.
+set.seed(2025)
+for(x in c(.5, 1, 1.5, 2, 3, 5, 10, 20)){
+  pracma::tic()
+  
+  tab = weibull_carta_xbar(gama0 = 50, delta0 = 25, vetordelta = x)
+  #write.csv(tab, file="tabela1.csv", append = TRUE)
+  write.table(tab, "tabela_a4.csv", sep = ",", col.names = !file.exists("tabela_a4.csv"),
+              row.names = F, append = T)
+  
+  pracma::toc()
+}
+
+# gama_0	50.0000			
+# delta_0	25.0000			
+# ARL_0	370.3978			
+# mu_0	48.9219			
+# sigma_0	2.4413			
+# LIC	45.0241			
+# LSC	51.6518
+
+```
+
+
+#### Graficamente
+
+```{r}
+dados = read.csv('tabela1_50mi.csv')
+dados <- dados[, c(1:3)]
+colnames(dados) <- c('Gama1', 'Delta1', 'ARL1')
+
+x = dados[1:10, 1]
+
+ggplot(dados[1:30, ], aes(x=Gama1, y=ARL1, group = Delta1, colour=factor(Delta1))) +
+  geom_point() +
+  geom_line() +
+  labs(y = quote(CMS_1), x = 'Gama_1', colour = 'Delta_1') +
+  scale_x_continuous(breaks = dados[1:10,1]) +
+  theme_classic()
+```
+
+
+```{r}
+plot(x=x, y=dados[1:10, 3], 'b', ylim=c(min(dados[, 3]), 45),
+    pch = 16, cex = .5, ylab = "ARL_1")
+
+lines(x = x, y = dados[11:20, 3], 'b', pch = 16, cex = .5, col='blue')
+lines(x = x, y = dados[21:30, 3], 'b', pch = 16, cex = .5, col='red')
+#lines(x = x, y = dados[31:40, 3], 'b')
+
+par(mfrow=c(2,2))
+plot(x = x, y = dados[41:50, 3], 'b', pch=16, cex = .5)
+plot(x = x, y = dados[51:60, 3], 'b', pch=16, cex = .5)
+plot(x = x, y = dados[61:70, 3], 'b', pch=16, cex = .5)
+plot(x = x, y = dados[71:80, 3], 'b', pch=16, cex = .5)
+
+
 ```
 
