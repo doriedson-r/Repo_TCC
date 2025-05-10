@@ -16,7 +16,7 @@ require(ggplot2)
 
 ### Versão de 'Weibull_Carta.R'
 
-```{r função da tabela 1}
+```{r função da tabela xbarra}
 pracma::clear()
 
 weibull_carta_xbar = function(gama0=2, delta0=2,
@@ -40,9 +40,6 @@ weibull_carta_xbar = function(gama0=2, delta0=2,
   
   # Distribuição Sob H0 (sob controle)
   
-  #corridas<-50000000
-  #Corridas Amostras de tamanho n
-
   SC0 <- (matrix(rweibull(n*corridas, delta0, gama0), n, corridas))
   SCmean0 <- colMeans(SC0) #Média das corridas amostras
   
@@ -53,9 +50,7 @@ weibull_carta_xbar = function(gama0=2, delta0=2,
   
   ARL0<-1/(mean(SCmean0 <= LIC) + (mean(SCmean0 >= LSC)))
 
-  tabela = data.frame(matrix(#c(sigma0, delta0, ARL0, mu0, sigma0, LIC, LSC),
-                             0, ncol=7)
-                      )
+  tabela = data.frame(matrix(0, ncol=7))
   colnames(tabela) <- c("gama1", "delta1", "ARL1",
                          "mu1", "sigma1", "desvio", "d(%)")
   for(delta1 in vetordelta){
@@ -88,8 +83,7 @@ weibull_carta_xbar = function(gama0=2, delta0=2,
                              'sigma_0'= round(Sigma0, 4), 'LIC' = round(LIC, 4),
                              'LSC' = round(LSC, 4))))
   tabela <- tabela[-1, ]
-  # colnames(tabela) <- c("gama1", "delta1", "ARL1",
-  #                       "mu1", "sigma1", "desvio", "d(%)")
+  
   return(tabela)
 }
 
@@ -108,7 +102,15 @@ for(x in c(.5, 1, 1.5, 2, 3, 5, 10, 20)){
   
   pracma::toc()
 }
- 
+
+# gama_0	2.0000			
+# delta_0	2.0000			
+# ARL_0	370.3978			
+# mu_0	1.7725			
+# sigma_0	0.9265			
+# LIC	0.7094			
+# LSC	3.1526
+
 ```
 
 ```{r tabela a1, eval=FALSE}
@@ -211,7 +213,7 @@ for(x in c(.5, 1, 1.5, 2, 3, 5, 10, 20)){
 
 #### Graficamente
 
-```{r}
+```{r grafico cms}
 dados = read.csv('tabela1_50mi.csv')
 dados <- dados[, c(1:3)]
 colnames(dados) <- c('Gama1', 'Delta1', 'ARL1')
@@ -221,9 +223,10 @@ x = dados[1:10, 1]
 ggplot(dados[1:30, ], aes(x=Gama1, y=ARL1, group = Delta1, colour=factor(Delta1))) +
   geom_point() +
   geom_line() +
-  labs(y = quote(CMS_1), x = 'Gama_1', colour = 'Delta_1') +
+  labs(y = expression(CMS[1]), x = expression(gamma[1]), colour = expression(delta[1])) +
   scale_x_continuous(breaks = dados[1:10,1]) +
   theme_classic()
+
 ```
 
 
