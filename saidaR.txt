@@ -1,0 +1,78 @@
+> tic()
+> clear()
+> 
+> #Parametros sob controle
+> gamma0<-2
+> delta0<-2
+> 
+> #Parametros fora controle
+> gamma1<-1.5
+> delta1<-2
+> 
+> n=5
+> mu0<-gamma0*(gamma(1/delta0+1))
+> Sigma20<-(gamma0^2)*(gamma(2/delta0+1)-(gamma(1/delta0+1)^2))
+> Sigma0<-Sigma20^0.5
+> 
+> #Distribui??o Sob H0 (sob controle)
+> corridas<-50000000
+> SC0<-(matrix(rweibull(n*corridas, delta0, gamma0), n, corridas)) #Corridas Amostras de tamanho n
+> SCmean0<-colMeans(SC0) #Mean das corridas amostras
+> SCvar0<-colVars(SC0)
+> #Limites de Controle
+> 
+> z<-seq(0.00012, 0.0010, 0.000005) # precisa avaliar caso a caso
+> zt=length(z)
+> H0=matrix(0,zt,7)
+> for (v in 1:zt) {
++   v1=z[v]
++   Lm<-quantile(SCmean0, c(v1, 1-v1))
++   Lv<-quantile(SCvar0, c(v1, 1-v1))
++   LSa<-Lm[[2]]
++   LIa<-Lm[[1]]
++   LSb<-Lv[[2]]
++   LIb<-Lv[[1]]
++   
++   zz<-mean(SCmean0<=LIa | SCmean0>=LSa | SCvar0<=LIb | SCvar0>=LSb)
++   zz=1/zz
++   erro=abs(zz-370.4)
++   H0[v, 1]=v1
++   H0[v, 2]=erro
++   H0[v, 3]=zz
++   H0[v, 4]=LSa
++   H0[v, 5]=LIa
++   H0[v, 6]=LSb
++   H0[v, 7]=LIb
++ }
+> 
+> H0f<-sortrows(H0, 2)
+> 
+> ARL0<-H0f[1, 3]
+> 
+> SC1<-(matrix(rweibull(n*corridas, delta1, gamma1), n, corridas)) #Corridas Amostras de tamanho n
+> SCmean1<-colMeans(SC1) 
+> SCvar1<-colVars(SC1)
+> LSa<-H0f[1, 4]
+> LIa<-H0f[1, 5]
+> LSb<-H0f[1, 6]
+> LIb<-H0f[1, 7]
+> 
+> #Seria bom fazer um loop aqui para aproveitar os Limites de Controle já calculados
+> zz1<-mean(SCmean1<=LIa | SCmean1>=LSa | SCvar1<=LIb | SCvar1>=LSb)
+> ARL1=1/zz1
+> 
+> cat('Limite Superior Media Conjunta=', LSa, "\n")
+Limite Superior Media Conjunta= 3.2558 
+> cat('Limite Inferior Media Conjunta =', LIa, "\n")
+Limite Inferior Media Conjunta = 0.6556064 
+> cat('Limite Superior VarianciaConjunta =', LSb, "\n")
+Limite Superior VarianciaConjunta = 4.632784 
+> cat('Limite Inferior VarianciaConjunta =', LIb, "\n")
+Limite Inferior VarianciaConjunta = 0.01572179 
+> cat('ARL0=', ARL0, "\n")
+ARL0= 370.4006 
+> cat('ARL1=', ARL1, "\n")
+ARL1= 103.3838 
+> 
+> toc()
+elapsed time is 766.760000 seconds 

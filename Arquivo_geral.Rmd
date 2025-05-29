@@ -14,6 +14,8 @@ require(ggplot2)
 
 ```
 
+*Cada chunk deste arquivo foi idealizada para ser executada uma vez na mesma ordem em que se encontra.*
+
 ### Versão de 'Weibull_Carta.R'
 
 ```{r função da tabela xbarra}
@@ -22,7 +24,7 @@ pracma::clear()
 weibull_carta_xbar = function(gama0=2, delta0=2,
                               gama1=c(.1, .5, 1, 1.5, 2, 2.5, 3, 4, 5, 6),
                               n=5, corridas=50*10**6, vetordelta){
-  # Essa função faz a Tabela 1: Valores de ARL's obtidos para análise de desempenho
+  # Essa função faz a Tabela 1 (e as correlatas do apêndice): Valores de ARL's obtidos para análise de desempenho
   # do gráfico de X_barra (mudança bidirecional)
   
   # gama0 e delta0 são os Parâmetros sob controle.
@@ -38,7 +40,7 @@ weibull_carta_xbar = function(gama0=2, delta0=2,
   Sigma0 <- Sigma20^0.5
   
   
-  # Distribuição Sob H0 (sob controle)
+  ## Distribuição Sob H0 (sob controle)
   
   SC0 <- (matrix(rweibull(n*corridas, delta0, gama0), n, corridas))
   SCmean0 <- colMeans(SC0) #Média das corridas amostras
@@ -51,8 +53,8 @@ weibull_carta_xbar = function(gama0=2, delta0=2,
   ARL0<-1/(mean(SCmean0 <= LIC) + (mean(SCmean0 >= LSC)))
 
   tabela = data.frame(matrix(0, ncol=7))
-  colnames(tabela) <- c("gama1", "delta1", "ARL1",
-                         "mu1", "sigma1", "desvio", "d(%)")
+  colnames(tabela) <- c("$\gamma_1$", "$\delta_1$", "$ARL_1$",
+                         "$\mu_1$", "$\sigma_1$", "$desvio$", "$d(\%)$")
   for(delta1 in vetordelta){
     for(valor in gama1){
       # Distribuição sob H1 (Fora de Controle)
@@ -89,7 +91,7 @@ weibull_carta_xbar = function(gama0=2, delta0=2,
 
 ```
 
-```{r eval=FALSE}
+```{r tabela 1, eval=FALSE}
 # Para o número de corridas padrão cada iteração demora, em média, 5 min.
 set.seed(2025)
 for(x in c(.5, 1, 1.5, 2, 3, 5, 10, 20)){
@@ -230,7 +232,7 @@ ggplot(dados[1:30, ], aes(x=Gama1, y=ARL1, group = Delta1, colour=factor(Delta1)
 ```
 
 
-```{r}
+```{r grafico cms II}
 plot(x=x, y=dados[1:10, 3], 'b', ylim=c(min(dados[, 3]), 45),
     pch = 16, cex = .5, ylab = "ARL_1")
 
@@ -244,6 +246,149 @@ plot(x = x, y = dados[51:60, 3], 'b', pch=16, cex = .5)
 plot(x = x, y = dados[61:70, 3], 'b', pch=16, cex = .5)
 plot(x = x, y = dados[71:80, 3], 'b', pch=16, cex = .5)
 
+
+```
+
+```{r grafico de cms por desvio}
+dados = read.csv('tabela1.csv')
+dados <- dados[, c(2,3,4,8)]
+colnames(dados) <- c('Gama1', 'Delta1', 'ARL1', 'd')
+
+g1 = ggplot(dados, aes(x=d, y=ARL1, group = d, colour=d)) +
+  geom_point() +
+  xlim(c(-1,1)*100) +
+  ylim(0, 600) +
+  labs(y = expression(CMS[1]), x = 'Desvio da média (%)',
+       colour = 'Desvio da\nmédia (%)') +
+  #scale_fill_viridis_b()
+  #scale_fill_brewer(palette = 'Set1') +
+  #scale_x_continuous(breaks = dados[1:10,1]) +
+  theme_classic()
+
+g1
+
+#g1 + scale_fill_distiller(palette = "Spectral")
+#g1 + scale_color_brewer(palette = 'Set2')
+
+```
+
+## Versão de 'Weibull_Carta_Conjunta.R'
+
+
+
+```{r geração dos valores e cálculo dos limites}
+clear()
+
+set.seed(2025)
+
+pracma::tic()
+
+#Parametros sob controle
+gamma0<-2
+delta0<-2
+
+n=5
+mu0<-gamma0*(gamma(1/delta0+1))
+Sigma20<-(gamma0^2)*(gamma(2/delta0+1)-(gamma(1/delta0+1)^2))
+Sigma0<-Sigma20^0.5
+
+# DistribuiçÃo Sob H0 (sob controle)
+corridas<-50000000
+
+# Corridas Amostras de tamanho n
+SC0<-(matrix(rweibull(n*corridas, delta0, gamma0), n, corridas))
+
+# Média e variância das corridas amostras
+SCmean0<-colMeans(SC0) 
+SCvar0<-colVars(SC0)
+
+#Limites de Controle
+## Será criada uma matriz com as estatísticas listadas abaixo, essas serão
+## calculadas a partir de cada quantil z.
+
+z<-seq(0.00012, 0.0010, 0.000005) # precisa avaliar caso a caso
+zt=length(z)
+H0=matrix(0,zt,7)
+for (v in 1:zt) {
+  v1=z[v]
+  Lm<-quantile(SCmean0, c(v1, 1-v1))
+  Lv<-quantile(SCvar0, c(v1, 1-v1))
+  LSa<-Lm[[2]]
+  LIa<-Lm[[1]]
+  LSb<-Lv[[2]]
+  LIb<-Lv[[1]]
+  
+  zz<-mean(SCmean0<=LIa | SCmean0>=LSa | SCvar0<=LIb | SCvar0>=LSb)
+  zz=1/zz
+  erro=abs(zz-370.4)
+  H0[v, 1]=v1
+  H0[v, 2]=erro
+  H0[v, 3]=zz
+  H0[v, 4]=LSa
+  H0[v, 5]=LIa
+  H0[v, 6]=LSb
+  H0[v, 7]=LIb
+}
+
+H0f<-sortrows(H0, 2)
+
+ARL0<-H0f[1, 3]
+
+pracma::toc() # 763 segundos
+
+```
+
+
+```{r Laço}
+pracma::tic()
+
+# Parametros fora controle
+vetorgama <- c(.1, .5, 1, 1.5, 2, 2.5, 3, 4, 5, 6)
+vetordelta <- c(.5, 1, 1.5, 2, 3, 5, 10, 20)
+
+
+for(gamma1 in vetorgama){
+  resultados = matrix(0, ncol=8, dimnames = list(
+    c(''),
+    c('$gamma_1$', '$delta_1$', 'LSa', 'LIa',
+      'LSb', 'LIb', '$ARL_0$', '$ARL_1_conjunta$')))
+  
+  for(delta1 in vetordelta){
+    # Corridas Amostras de tamanho n
+    SC1 <- (matrix(rweibull(n*corridas, delta1, gamma1), n, corridas))
+    
+    SCmean1<-colMeans(SC1)
+    SCvar1<-colVars(SC1)
+    LSa<-H0f[1, 4]
+    LIa<-H0f[1, 5]
+    LSb<-H0f[1, 6]
+    LIb<-H0f[1, 7]
+
+    zz1<-mean(SCmean1<=LIa | SCmean1>=LSa | SCvar1<=LIb | SCvar1>=LSb)
+    ARL1=1/zz1
+    
+    da_vez = c(gamma1, delta1, LSa, LIa, LSb, LIb, ARL0, ARL1)
+    
+    resultados = rbind(resultados, da_vez)
+    cat("\nFeito: delta_1=", delta1)
+  }
+  
+  # Escrevendo os resultados em um arquivo .csv
+  write.table(resultados, "tabela_conjunta.csv", sep = ",",
+              col.names = !file.exists("tabela_conjunta.csv"),
+              row.names = F, append = T)
+  
+  cat("\n\t\tFeito: gama_1=", gamma1)
+}
+
+#cat('Limite Superior Media Conjunta=', LSa, "\n")
+#cat('Limite Inferior Media Conjunta =', LIa, "\n")
+#cat('Limite Superior VarianciaConjunta =', LSb, "\n")
+#cat('Limite Inferior VarianciaConjunta =', LIb, "\n")
+#cat('ARL0=', ARL0, "\n")
+#cat('ARL1=', ARL1, "\n")
+
+pracma::toc() # 2817 segundos
 
 ```
 
