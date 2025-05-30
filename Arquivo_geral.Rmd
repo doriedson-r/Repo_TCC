@@ -274,7 +274,7 @@ g1
 
 ## Versão de 'Weibull_Carta_Conjunta.R'
 
-
+### Tabela 3
 
 ```{r geração dos valores e cálculo dos limites}
 clear()
@@ -302,7 +302,7 @@ SC0<-(matrix(rweibull(n*corridas, delta0, gamma0), n, corridas))
 SCmean0<-colMeans(SC0) 
 SCvar0<-colVars(SC0)
 
-#Limites de Controle
+# Limites de Controle
 ## Será criada uma matriz com as estatísticas listadas abaixo, essas serão
 ## calculadas a partir de cada quantil z.
 
@@ -334,7 +334,7 @@ H0f<-sortrows(H0, 2)
 
 ARL0<-H0f[1, 3]
 
-pracma::toc() # 763 segundos
+pracma::toc() # 428 segundos
 
 ```
 
@@ -374,7 +374,7 @@ for(gamma1 in vetorgama){
   }
   
   # Escrevendo os resultados em um arquivo .csv
-  write.table(resultados, "tabela_conjunta.csv", sep = ",",
+  write.table(resultados[-1, ], "tabela_conjunta.csv", sep = ",",
               col.names = !file.exists("tabela_conjunta.csv"),
               row.names = F, append = T)
   
@@ -388,7 +388,446 @@ for(gamma1 in vetorgama){
 #cat('ARL0=', ARL0, "\n")
 #cat('ARL1=', ARL1, "\n")
 
-pracma::toc() # 2817 segundos
+pracma::toc() # 2790 segundos
 
 ```
 
+### Tabela 4
+
+```{r geração dos valores e cálculo dos limites tab4}
+clear()
+
+set.seed(2025)
+
+pracma::tic()
+
+#Parametros sob controle
+gamma0 <- 2
+delta0 <- 3
+n=5
+mu0<-gamma0*(gamma(1/delta0+1))
+Sigma20<-(gamma0^2)*(gamma(2/delta0+1)-(gamma(1/delta0+1)^2))
+Sigma0<-Sigma20^0.5
+
+# DistribuiçÃo Sob H0 (sob controle)
+corridas<-50000000
+
+# Corridas Amostras de tamanho n
+SC0<-(matrix(rweibull(n*corridas, delta0, gamma0), n, corridas))
+
+# Média e variância das corridas amostras
+SCmean0<-colMeans(SC0) 
+SCvar0<-colVars(SC0)
+
+# Limites de Controle
+## Será criada uma matriz com as estatísticas listadas abaixo, essas serão
+## calculadas a partir de cada quantil z.
+
+z<-seq(0.00012, 0.0010, 0.000005) # precisa avaliar caso a caso
+zt=length(z)
+H0=matrix(0,zt,7)
+for (v in 1:zt) {
+  v1=z[v]
+  Lm<-quantile(SCmean0, c(v1, 1-v1))
+  Lv<-quantile(SCvar0, c(v1, 1-v1))
+  LSa<-Lm[[2]]
+  LIa<-Lm[[1]]
+  LSb<-Lv[[2]]
+  LIb<-Lv[[1]]
+  
+  zz<-mean(SCmean0<=LIa | SCmean0>=LSa | SCvar0<=LIb | SCvar0>=LSb)
+  zz=1/zz
+  erro=abs(zz-370.4)
+  H0[v, 1]=v1
+  H0[v, 2]=erro
+  H0[v, 3]=zz
+  H0[v, 4]=LSa
+  H0[v, 5]=LIa
+  H0[v, 6]=LSb
+  H0[v, 7]=LIb
+}
+
+H0f<-sortrows(H0, 2)
+
+ARL0<-H0f[1, 3]
+
+pracma::toc() # 450 segundos
+
+```
+
+
+```{r Laço tab4}
+nome = 'tabela4.csv'
+pracma::tic()
+
+# Parametros fora controle
+vetorgama <- c(.1, .5, 1, 1.5, 2, 2.5, 3, 4, 5, 6)
+vetordelta <- c(.5, 1, 1.5, 2, 3, 5, 10, 20)
+
+for(gamma1 in vetorgama){
+  resultados = matrix(0, ncol=8, dimnames = list(
+    c(''),
+    c('$gamma_1$', '$delta_1$', 'LSa', 'LIa',
+      'LSb', 'LIb', '$ARL_0$', '$ARL_1_conjunta$')))
+  
+  for(delta1 in vetordelta){
+    # Corridas Amostras de tamanho n
+    SC1 <- (matrix(rweibull(n*corridas, delta1, gamma1), n, corridas))
+    
+    SCmean1<-colMeans(SC1)
+    SCvar1<-colVars(SC1)
+    LSa<-H0f[1, 4]
+    LIa<-H0f[1, 5]
+    LSb<-H0f[1, 6]
+    LIb<-H0f[1, 7]
+
+    zz1<-mean(SCmean1<=LIa | SCmean1>=LSa | SCvar1<=LIb | SCvar1>=LSb)
+    ARL1=1/zz1
+    
+    da_vez = c(gamma1, delta1, LSa, LIa, LSb, LIb, ARL0, ARL1)
+    
+    resultados = rbind(resultados, da_vez)
+    cat("\nFeito: delta_1=", delta1)
+  }
+  
+  # Escrevendo os resultados em um arquivo .csv
+  write.table(resultados[-1, ], nome, sep = ",",
+              col.names = !file.exists(nome),
+              row.names = F, append = T)
+  
+  cat("\n\t\tFeito: gama_1=", gamma1)
+}
+
+pracma::toc() # 2424 segundos
+
+```
+
+### Tabela 5
+
+```{r}
+clear()
+
+set.seed(2025)
+
+pracma::tic()
+
+#Parametros sob controle
+gamma0 <- 1/2
+delta0 <- 1
+n=5
+mu0<-gamma0*(gamma(1/delta0+1))
+Sigma20<-(gamma0^2)*(gamma(2/delta0+1)-(gamma(1/delta0+1)^2))
+Sigma0<-Sigma20^0.5
+
+# DistribuiçÃo Sob H0 (sob controle)
+corridas<-50000000
+
+# Corridas Amostras de tamanho n
+SC0<-(matrix(rweibull(n*corridas, delta0, gamma0), n, corridas))
+
+# Média e variância das corridas amostras
+SCmean0<-colMeans(SC0) 
+SCvar0<-colVars(SC0)
+
+# Limites de Controle
+## Será criada uma matriz com as estatísticas listadas abaixo, essas serão
+## calculadas a partir de cada quantil z.
+
+z<-seq(0.00012, 0.0010, 0.000005) # precisa avaliar caso a caso
+zt=length(z)
+H0=matrix(0,zt,7)
+for (v in 1:zt) {
+  v1=z[v]
+  Lm<-quantile(SCmean0, c(v1, 1-v1))
+  Lv<-quantile(SCvar0, c(v1, 1-v1))
+  LSa<-Lm[[2]]
+  LIa<-Lm[[1]]
+  LSb<-Lv[[2]]
+  LIb<-Lv[[1]]
+  
+  zz<-mean(SCmean0<=LIa | SCmean0>=LSa | SCvar0<=LIb | SCvar0>=LSb)
+  zz=1/zz
+  erro=abs(zz-370.4)
+  H0[v, 1]=v1
+  H0[v, 2]=erro
+  H0[v, 3]=zz
+  H0[v, 4]=LSa
+  H0[v, 5]=LIa
+  H0[v, 6]=LSb
+  H0[v, 7]=LIb
+}
+
+H0f<-sortrows(H0, 2)
+
+ARL0<-H0f[1, 3]
+
+pracma::toc() # 555 segundos
+
+```
+
+
+```{r}
+nome = 'tabela5.csv'
+pracma::tic()
+
+# Parametros fora controle
+vetorgama <- c(.1, .5, 1, 1.5, 2, 2.5, 3, 4, 5, 6)
+vetordelta <- c(.5, 1, 1.5, 2, 3, 5, 10, 20)
+
+for(gamma1 in vetorgama){
+  resultados = matrix(0, ncol=8, dimnames = list(
+    c(''),
+    c('$gamma_1$', '$delta_1$', 'LSa', 'LIa',
+      'LSb', 'LIb', '$ARL_0$', '$ARL_1_conjunta$')))
+  aux=50000
+  for(delta1 in vetordelta){
+    # Corridas Amostras de tamanho n
+    SC1 <- (matrix(rweibull(n*corridas, delta1, gamma1), n, corridas))
+    
+    SCmean1<-colMeans(SC1)
+    SCvar1<-colVars(SC1)
+    LSa<-H0f[1, 4]
+    LIa<-H0f[1, 5]
+    LSb<-H0f[1, 6]
+    LIb<-H0f[1, 7]
+
+    zz1<-mean(SCmean1<=LIa | SCmean1>=LSa | SCvar1<=LIb | SCvar1>=LSb)
+    ARL1=1/zz1
+    
+    da_vez = c(gamma1, delta1, LSa, LIa, LSb, LIb, ARL0, ARL1)
+    
+    resultados = rbind(resultados, da_vez)
+    cat("\nFeito: delta_1=", delta1)
+  }
+  
+  # Escrevendo os resultados em um arquivo .csv
+  write.table(resultados[-1, ], nome, sep = ",",
+              col.names = !file.exists(nome),
+              row.names = F, append = T)
+  
+  cat("\n\t\tFeito: gama_1=", gamma1)
+}
+
+pracma::toc() # 2656 segundos
+
+```
+
+### Tabela 6
+
+```{r}
+clear()
+
+set.seed(2025)
+
+pracma::tic()
+
+# Parametros sob controle
+gamma0 <- 3
+delta0 <- 6
+n=5
+mu0<-gamma0*(gamma(1/delta0+1))
+Sigma20<-(gamma0^2)*(gamma(2/delta0+1)-(gamma(1/delta0+1)^2))
+Sigma0<-Sigma20^0.5
+
+# DistribuiçÃo Sob H0 (sob controle)
+corridas<-50000000
+
+# Corridas Amostras de tamanho n
+SC0<-(matrix(rweibull(n*corridas, delta0, gamma0), n, corridas))
+
+# Média e variância das corridas amostras
+SCmean0<-colMeans(SC0) 
+SCvar0<-colVars(SC0)
+
+# Limites de Controle
+## Será criada uma matriz com as estatísticas listadas abaixo, essas serão
+## calculadas a partir de cada quantil z.
+
+z<-seq(0.00012, 0.0010, 0.000005) # precisa avaliar caso a caso
+zt=length(z)
+H0=matrix(0,zt,7)
+for (v in 1:zt) {
+  v1=z[v]
+  Lm<-quantile(SCmean0, c(v1, 1-v1))
+  Lv<-quantile(SCvar0, c(v1, 1-v1))
+  LSa<-Lm[[2]]
+  LIa<-Lm[[1]]
+  LSb<-Lv[[2]]
+  LIb<-Lv[[1]]
+  
+  zz<-mean(SCmean0<=LIa | SCmean0>=LSa | SCvar0<=LIb | SCvar0>=LSb)
+  zz=1/zz
+  erro=abs(zz-370.4)
+  H0[v, 1]=v1
+  H0[v, 2]=erro
+  H0[v, 3]=zz
+  H0[v, 4]=LSa
+  H0[v, 5]=LIa
+  H0[v, 6]=LSb
+  H0[v, 7]=LIb
+}
+
+H0f<-sortrows(H0, 2)
+
+ARL0<-H0f[1, 3]
+
+pracma::toc() # 439 segundos
+
+```
+
+
+```{r}
+nome = 'tabela6.csv'
+pracma::tic()
+
+# Parametros fora controle
+vetorgama <- c(.1, .5, 1, 1.5, 2, 2.5, 3, 4, 5, 6)
+vetordelta <- c(.5, 1, 1.5, 2, 3, 5, 10, 20)
+
+for(gamma1 in vetorgama){
+  resultados = matrix(0, ncol=8, dimnames = list(
+    c(''),
+    c('$gamma_1$', '$delta_1$', 'LSa', 'LIa',
+      'LSb', 'LIb', '$ARL_0$', '$ARL_1_conjunta$')))
+  
+  for(delta1 in vetordelta){
+    # Corridas Amostras de tamanho n
+    SC1 <- (matrix(rweibull(n*corridas, delta1, gamma1), n, corridas))
+    
+    SCmean1<-colMeans(SC1)
+    SCvar1<-colVars(SC1)
+    LSa<-H0f[1, 4]
+    LIa<-H0f[1, 5]
+    LSb<-H0f[1, 6]
+    LIb<-H0f[1, 7]
+
+    zz1<-mean(SCmean1<=LIa | SCmean1>=LSa | SCvar1<=LIb | SCvar1>=LSb)
+    ARL1=1/zz1
+    
+    da_vez = c(gamma1, delta1, LSa, LIa, LSb, LIb, ARL0, ARL1)
+    
+    resultados = rbind(resultados, da_vez)
+    cat("\nFeito: delta_1=", delta1)
+  }
+  
+  # Escrevendo os resultados em um arquivo .csv
+  write.table(resultados[-1, ], nome, sep = ",",
+              col.names = !file.exists(nome),
+              row.names = F, append = T)
+  
+  cat("\n\t\tFeito: gama_1=", gamma1)
+}
+
+pracma::toc() # 2905 segundos
+
+```
+
+### Tabela 7
+
+```{r}
+clear()
+
+set.seed(2025)
+
+pracma::tic()
+
+#Parametros sob controle
+gamma0 <- 50
+delta0 <- 25
+n=5
+mu0<-gamma0*(gamma(1/delta0+1))
+Sigma20<-(gamma0^2)*(gamma(2/delta0+1)-(gamma(1/delta0+1)^2))
+Sigma0<-Sigma20^0.5
+
+# DistribuiçÃo Sob H0 (sob controle)
+corridas<-50000000
+
+# Corridas Amostras de tamanho n
+SC0<-(matrix(rweibull(n*corridas, delta0, gamma0), n, corridas))
+
+# Média e variância das corridas amostras
+SCmean0<-colMeans(SC0) 
+SCvar0<-colVars(SC0)
+
+# Limites de Controle
+## Será criada uma matriz com as estatísticas listadas abaixo, essas serão
+## calculadas a partir de cada quantil z.
+
+z<-seq(0.00012, 0.0010, 0.000005) # precisa avaliar caso a caso
+zt=length(z)
+H0=matrix(0,zt,7)
+for (v in 1:zt) {
+  v1=z[v]
+  Lm<-quantile(SCmean0, c(v1, 1-v1))
+  Lv<-quantile(SCvar0, c(v1, 1-v1))
+  LSa<-Lm[[2]]
+  LIa<-Lm[[1]]
+  LSb<-Lv[[2]]
+  LIb<-Lv[[1]]
+  
+  zz<-mean(SCmean0<=LIa | SCmean0>=LSa | SCvar0<=LIb | SCvar0>=LSb)
+  zz=1/zz
+  erro=abs(zz-370.4)
+  H0[v, 1]=v1
+  H0[v, 2]=erro
+  H0[v, 3]=zz
+  H0[v, 4]=LSa
+  H0[v, 5]=LIa
+  H0[v, 6]=LSb
+  H0[v, 7]=LIb
+}
+
+H0f<-sortrows(H0, 2)
+
+ARL0<-H0f[1, 3]
+
+pracma::toc() # 544 segundos
+
+```
+
+
+```{r}
+nome = 'tabela7.csv'
+pracma::tic()
+
+# Parametros fora controle
+vetorgama <- c(.1, .5, 1, 1.5, 2, 2.5, 3, 4, 5, 6)
+vetordelta <- c(.5, 1, 1.5, 2, 3, 5, 10, 20)
+
+for(gamma1 in vetorgama){
+  resultados = matrix(0, ncol=8, dimnames = list(
+    c(''),
+    c('$gamma_1$', '$delta_1$', 'LSa', 'LIa',
+      'LSb', 'LIb', '$ARL_0$', '$ARL_1_conjunta$')))
+  
+  for(delta1 in vetordelta){
+    # Corridas Amostras de tamanho n
+    SC1 <- (matrix(rweibull(n*corridas, delta1, gamma1), n, corridas))
+    
+    SCmean1<-colMeans(SC1)
+    SCvar1<-colVars(SC1)
+    LSa<-H0f[1, 4]
+    LIa<-H0f[1, 5]
+    LSb<-H0f[1, 6]
+    LIb<-H0f[1, 7]
+
+    zz1<-mean(SCmean1<=LIa | SCmean1>=LSa | SCvar1<=LIb | SCvar1>=LSb)
+    ARL1=1/zz1
+    
+    da_vez = c(gamma1, delta1, LSa, LIa, LSb, LIb, ARL0, ARL1)
+    
+    resultados = rbind(resultados, da_vez)
+    cat("\nFeito: delta_1=", delta1)
+  }
+  
+  # Escrevendo os resultados em um arquivo .csv
+  write.table(resultados[-1, ], nome, sep = ",",
+              col.names = !file.exists(nome),
+              row.names = F, append = T)
+  
+  cat("\n\t\tFeito: gama_1=", gamma1)
+}
+
+pracma::toc() # 3153 segundos
+
+```
