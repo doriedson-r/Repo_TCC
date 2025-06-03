@@ -13,6 +13,7 @@ knitr::opts_chunk$set(echo = TRUE)
 require(ggplot2)
 require(pracma)
 require(matrixStats)
+require(tidyr)
 
 ```
 
@@ -1039,7 +1040,7 @@ toc() # 231 segundos
 ```{r parte2}
 tic()
 
-nome = 'carta_s2_1.csv'
+nome = 'carta_b1.csv'
 
 # Parametros fora controle
 vetorgama <- c(.1, .5, 1, 1.5, 2, 2.5, 3, 4, 5, 6)
@@ -1526,3 +1527,113 @@ toc() # 2523 segundos
 
 ```
 
+### Anexo
+
+```{r}
+dados = read.csv("Outros/tabelas_finais/TCC_tabelas(Tabela 3).csv",
+                 check.names = F)
+
+dados <- dados[, c(5:7)]
+dados <- cbind(dados, id = seq(1, 80))
+colnames(dados) <- c('media', 'var', 'conjunta', 'Index')
+
+nomes_personalizados <- c(
+  "media" = "Média",
+  "var" = "Variância",
+  "conjunta" = "Conjunta"
+)
+tipos_linha_personalizados <- c(
+  "media" = "solid",    # Linha sólida
+  "var" = "dashed",   # Linha tracejada
+  "conjunta" = "solid"    # Linha sólida
+)
+cores_personalizadas <- c(
+  "media" = "blue",
+  "var" = "red",
+  "conjunta" = "green"
+)
+
+plot(x = seq(1, 80), y = dados$ARL_media, 'l', ylim = c(0, 1000))
+lines(x = seq(1, 80), y = dados$ARL_var, col = 'blue')
+lines(x = seq(1, 80), y = dados$ARL_conjunta, col = 'red')
+
+# Use 'pivot_longer' para transformar os dados para o formato longo
+df_longo <- dados %>%
+  pivot_longer(cols = c('media', 'var', 'conjunta'),
+               names_to = "coluna",
+               values_to = "valor")
+
+# Crie o gráfico com ggplot2
+ggplot(df_longo, aes(x = Index, y = valor, color = coluna, linetype = coluna)) +
+  geom_line() +
+  ylim(0, 100) +
+  labs(title = "",
+       x = "Índice",
+       y = "Valor",
+       color = "CMS") +
+  # Edita os nomes das linhas na legenda
+  scale_color_manual(values = cores_personalizadas,
+                     labels = nomes_personalizados,
+                     name = "") +
+  # Edita os tipos de linha
+  scale_linetype_manual(values = tipos_linha_personalizados,
+                        labels = nomes_personalizados,
+                        name = "CMS da ") +
+  theme_classic()
+
+```
+
+```{r}
+dados = read.csv("Outros/tabelas_finais/TCC_tabelas(Tabela 4).csv",
+                 check.names = F)
+
+dados <- dados[, c(5:7)]
+dados <- cbind(dados, id = seq(1, 80))
+colnames(dados) <- c('media', 'var', 'conjunta', 'Index')
+
+nomes_personalizados <- c(
+  "media" = "Média",
+  "var" = "Variância",
+  "conjunta" = "Conjunta"
+)
+tipos_linha_personalizados <- c(
+  "media" = "solid",    # Linha sólida
+  "var" = "dashed",   # Linha tracejada
+  "conjunta" = "solid"    # Linha sólida
+)
+cores_personalizadas <- c(
+  "media" = "blue",
+  "var" = "red",
+  "conjunta" = "green"
+)
+
+plot(x = seq(1, 80), y = dados$media, 'l', ylim = c(0, 1000))
+lines(x = seq(1, 80), y = dados$var, col = 'blue')
+lines(x = seq(1, 80), y = dados$conjunta, col = 'red')
+
+# Use 'pivot_longer' para transformar os dados para o formato longo
+df_longo <- dados %>%
+  pivot_longer(cols = c('media', 'var', 'conjunta'),
+               names_to = "coluna",
+               values_to = "valor")
+
+# Crie o gráfico com ggplot2
+ggplot(df_longo, aes(x = Index, y = valor, color = coluna, linetype = coluna)) +
+  geom_line() +
+  ylim(0, 100) +
+  labs(title = "",
+       x = "Índice",
+       y = "Valor",
+       color = "CMS") +
+  # Edita os nomes das linhas na legenda
+  scale_color_manual(values = cores_personalizadas,
+                     labels = nomes_personalizados,
+                     name = "") +
+  # Edita os tipos de linha
+  scale_linetype_manual(values = tipos_linha_personalizados,
+                        labels = nomes_personalizados,
+                        name = "CMS da") +
+  theme_classic()
+
+
+```
