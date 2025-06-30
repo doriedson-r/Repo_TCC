@@ -18,9 +18,7 @@ require(dplyr)
 
 ```
 
-*Cada chunk deste arquivo foi idealizada para ser executada uma vez na mesma ordem em que se encontra.*
-
-### Versão de 'Weibull_Carta.R'
+# (PARTE I) Versão de 'Weibull_Carta.R'
 
 ```{r função da tabela xbarra}
 clear()
@@ -120,64 +118,6 @@ for(x in c(.5, 1, 1.5, 2, 3, 5, 10, 20)){
 # LSC	3.1526
 
 ```
-
-#### CMS_1=Inf
-
-O que ocorre no código quando o resultado é $CMS_1=Inf$?
-
-```{r}
-tic()
-
-gama0=2; delta0=2
-n=5; corridas=50*10**6
-
-# Média da distribuição
-  mu0 <- gama0*(gamma(1/delta0+1))
-  
-  # Desvio padrão
-  Sigma20 <- (gama0^2)*(gamma(2/delta0+1)-(gamma(1/delta0+1)^2))
-  Sigma0 <- Sigma20^0.5
-  
-  
-  ## Distribuição Sob H0 (sob controle)
-  set.seed(2025)
-  SC0 <- (matrix(rweibull(n*corridas, delta0, gama0), n, corridas))
-  SCmean0 <- colMeans(SC0) #Média das corridas amostras
-  
-  # Limites de Controle
-  L<-quantile(SCmean0, c(pnorm(-3), 1-pnorm(-3)))
-  LSC=L[[2]]
-  LIC=L[[1]]
-
-# Gama_1
-#valor = c(1.5, 2, 2.5)
-
-#delta1 = c(10, 20)
-
-valor=1.5; delta1=10
-
-# Distribuição sob H1 (Fora de Controle)
-mu1 <- valor*(gamma(1/delta1+1))
-Sigma21 <- (valor^2)*(gamma(2/delta1+1)-(gamma(1/delta1+1)^2))
-Sigma1 <- Sigma21^0.5
-
-set.seed(2025)
-# Distribuição Sob H1 (sob controle)
-SC1<-(matrix(rweibull(n*corridas, delta1, valor), n, corridas)) #Corridas Amostras de tamanho n
-SCmean1<-colMeans(SC1) #Mean das corridas amostras
-
-ARL1 <- 1/(mean(SCmean1<=LIC) + (mean(SCmean1>=LSC)))
-
-######################
-table(SCmean1<=LIC)
-table(SCmean1>=LSC)
-print(mean(SCmean1<=LIC)+ (mean(SCmean1>=LSC)))
-
-toc()
-
-```
-
-Portanto, o que aconteceu foi realmente uma divisão por zero.
 
 ### Tabelas apêndice A
 
@@ -279,7 +219,7 @@ for(x in c(.5, 1, 1.5, 2, 3, 5, 10, 20)){
 ```
 
 
-#### Graficamente
+### Graficamente
 
 ```{r grafico cms}
 dados = read.csv('tabela1_50mi.csv')
@@ -338,7 +278,7 @@ g1
 
 ```
 
-## Versão de 'Weibull_Carta_Conjunta.R'
+# (PARTE II) Versão de 'Weibull_Carta_Conjunta.R'
 
 ### Tabela 3
 
@@ -900,7 +840,7 @@ toc() # 3153 segundos
 
 ```
 
-### Tabelas apêndice B
+### (PARTE III) Carta Variância
 
 ```{r função da tabela s2}
 clear()
@@ -1806,11 +1746,13 @@ ggplot(data = dados_long, aes(x=delta1, y=Valor, shape = Tipo, colour= Tipo)) +
   geom_line() +
   coord_cartesian(ylim = c(0, 750)) +
   scale_x_continuous(limits = c(1, 5), breaks = c(1, 1.5, 2, 3, 5)) +
-  labs(x=expression('Delta'[1]), y = expression('CMS'[1]),
+  labs(x=expression(delta[1]), y = expression('CMS'[1]),
        shape = 'Carta', color = 'Carta') +
   theme_classic()
 
 colMeans(dados)
+
+lapply(dados, median)
 
 ```
 
@@ -1837,11 +1779,74 @@ ggplot(data = dados_long, aes(x=delta1, y=Valor, shape = Tipo, colour= Tipo)) +
   geom_line() +
   coord_cartesian(ylim = c(0, 150)) +
   scale_x_continuous(limits = c(1, 10), breaks = c(1, 1.5, 2, 3, 5, 10)) +
-  labs(x=expression('Delta'[1]), y = expression('CMS'[1]),
+  labs(x=expression(delta[1]), y = expression('CMS'[1]),
        color = 'Carta', shape = 'Carta') +
   theme_classic()
 
 colMeans(dados)
 
+lapply(dados, median)
 ```
 
+
+### CMS_1=Inf
+
+O que ocorre no código quando o resultado é $CMS_1=Inf$?
+
+```{r eval=FALSE, include=FALSE}
+# Atenção: por padrão essa chunk não é executada.
+
+tic()
+
+gama0=2; delta0=2
+n=5; corridas=50*10**6
+
+# Média da distribuição
+  mu0 <- gama0*(gamma(1/delta0+1))
+  
+  # Desvio padrão
+  Sigma20 <- (gama0^2)*(gamma(2/delta0+1)-(gamma(1/delta0+1)^2))
+  Sigma0 <- Sigma20^0.5
+  
+  
+  ## Distribuição Sob H0 (sob controle)
+  set.seed(2025)
+  SC0 <- (matrix(rweibull(n*corridas, delta0, gama0), n, corridas))
+  SCmean0 <- colMeans(SC0) #Média das corridas amostras
+  
+  # Limites de Controle
+  L<-quantile(SCmean0, c(pnorm(-3), 1-pnorm(-3)))
+  LSC=L[[2]]
+  LIC=L[[1]]
+
+# Gama_1
+#valor = c(1.5, 2, 2.5)
+
+#delta1 = c(10, 20)
+
+valor=1.5; delta1=10
+
+# Distribuição sob H1 (Fora de Controle)
+mu1 <- valor*(gamma(1/delta1+1))
+Sigma21 <- (valor^2)*(gamma(2/delta1+1)-(gamma(1/delta1+1)^2))
+Sigma1 <- Sigma21^0.5
+
+set.seed(2025)
+# Distribuição Sob H1 (sob controle)
+SC1<-(matrix(rweibull(n*corridas, delta1, valor), n, corridas)) #Corridas Amostras de tamanho n
+SCmean1<-colMeans(SC1) #Mean das corridas amostras
+
+ARL1 <- 1/(mean(SCmean1<=LIC) + (mean(SCmean1>=LSC)))
+
+######################
+table(SCmean1<=LIC)
+table(SCmean1>=LSC)
+print(mean(SCmean1<=LIC)+ (mean(SCmean1>=LSC)))
+
+toc()
+
+```
+
+Portanto, o que aconteceu foi realmente uma divisão por zero.
+
+É necessário ressaltar que, analiticamente, isso não é possível, pois significaria um teste de hipótese com $\beta=1$ --- ou seja, um experimento com 100% de chance de ignorar alarmes verdadeiros.
